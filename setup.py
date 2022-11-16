@@ -16,11 +16,17 @@ install_requires = [
     "appdirs",
     "scikit-learn",
     "packaging",
+    # NOTE(hadim): can't add rdkit because of `pip` will always override
+    # the conda package at the moment.
+    # See:
+    # - https://github.com/rdkit/rdkit/issues/5378
+    # - https://github.com/conda-forge/rdkit-feedstock/issues/104
+    # "rdkit",
 ]
 
 setup(
     name="datamol",
-    version="0.7.10",
+    version="0.8.4",
     author="Valence Discovery",
     author_email="hadrien@valencediscovery.com",
     url="https://github.com/datamol-org/datamol",
