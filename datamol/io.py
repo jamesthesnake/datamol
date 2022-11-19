@@ -2,7 +2,9 @@ from typing import Union
 from typing import Optional
 from typing import List
 from typing import Sequence
-from typing import TextIO
+from typing import IO
+from typing import Any
+from typing import cast
 
 import os
 import io
@@ -23,10 +25,10 @@ from .types import Mol
 
 
 def read_csv(
-    urlpath: Union[str, os.PathLike, TextIO],
+    urlpath: Union[str, os.PathLike, IO],
     smiles_column: Optional[str] = None,
     mol_column: str = "mol",
-    **kwargs,
+    **kwargs: Any,
 ) -> pd.DataFrame:
     """Read a CSV file.
 
@@ -35,7 +37,7 @@ def read_csv(
         smiles_column: Use this column to build a mol column.
         mol_column: Name to give to the mol column. If not None a mol column will be build.
             Avoid when loading a very large file.
-        kwargs: Arguments to pass to `pd.read_csv()`.
+        **kwargs: Arguments to pass to `pd.read_csv()`.
 
     Returns:
         df: a `pandas.DataFrame`
@@ -50,11 +52,11 @@ def read_csv(
 
 
 def read_excel(
-    urlpath: Union[str, os.PathLike, TextIO],
+    urlpath: Union[str, os.PathLike, IO],
     sheet_name: Optional[Union[str, int, list]] = 0,
     smiles_column: Optional[str] = None,
     mol_column: str = "mol",
-    **kwargs,
+    **kwargs: Any,
 ) -> pd.DataFrame:
     """Read an excel file.
 
@@ -64,13 +66,14 @@ def read_excel(
         mol_column: Name to give to the mol column. If not None a mol column will be build.
             Avoid when loading a very large file.
         mol_column: name to give to the mol column.
-        kwargs: Arguments to pass to `pd.read_excel()`.
+        **kwargs: Arguments to pass to `pd.read_excel()`.
 
     Returns:
         df: a `pandas.DataFrame`
     """
 
-    df = pd.read_excel(urlpath, sheet_name=sheet_name, **kwargs)  # type: ignore
+    df = pd.read_excel(urlpath, sheet_name=sheet_name, **kwargs)
+    df = cast(pd.DataFrame, df)
 
     if smiles_column is not None:
         PandasTools.AddMoleculeColumnToFrame(df, smiles_column, mol_column)
@@ -79,7 +82,7 @@ def read_excel(
 
 
 def read_sdf(
-    urlpath: Union[str, os.PathLike, TextIO],
+    urlpath: Union[str, os.PathLike, IO],
     sanitize: bool = True,
     as_df: bool = False,
     smiles_column: Optional[str] = "smiles",
@@ -88,6 +91,7 @@ def read_sdf(
     include_computed: bool = False,
     strict_parsing: bool = True,
     remove_hs: bool = True,
+    n_jobs: Optional[int] = 1,
 ) -> Union[List[Mol], pd.DataFrame]:
     """Read an SDF file.
 
@@ -106,6 +110,8 @@ def read_sdf(
             `as_df` is True.
         strict_parsing: If set to false, the parser is more lax about correctness of the contents.
         remove_hs: Whether to remove the existing hydrogens in the SDF files.
+        n_jobs: Optional number of jobs for parallelization of `to_df`. Leave to 1 for no
+            parallelization. Set to -1 to use all available cores. Only relevant is `as_df` is True
     """
 
     # File-like object
@@ -145,6 +151,7 @@ def read_sdf(
             mol_column=mol_column,
             include_private=include_private,
             include_computed=include_computed,
+            n_jobs=n_jobs,
         )  # type: ignore
 
     return mols
@@ -152,7 +159,7 @@ def read_sdf(
 
 def to_sdf(
     mols: Union[Mol, Sequence[Mol], pd.DataFrame],
-    urlpath: Union[str, os.PathLike, TextIO],
+    urlpath: Union[str, os.PathLike, IO],
     smiles_column: Optional[str] = "smiles",
     mol_column: Optional[str] = None,
 ):
@@ -203,7 +210,7 @@ def read_molblock(
     Note that potential molecule properties are **not** read.
 
     Args:
-        mol_block: String containing the Mol block.
+        molblock: String containing the Mol block.
         sanitize: Whether to sanitize the molecules.
         strict_parsing: If set to false, the parser is more lax about correctness of the contents.
         remove_hs: Whether to remove the existing hydrogens in the SDF files.
@@ -258,10 +265,19 @@ def to_molblock(
 
 def to_smi(
     mols: Sequence[Mol],
-    urlpath: Union[str, os.PathLike, TextIO],
+    urlpath: Union[str, os.PathLike, IO],
     error_if_empty: bool = False,
 ):
     """Save a list of molecules in an `.smi` file.
+
+    Note: We **strongly** recommend you to use `dm.to_csv` instead
+    of `dm.to_smi` since `.smi` files are CSV-like format. The only difference are the
+    default settings which changes:
+
+    - The default separator is a space ` ` instead of a comma `,`.
+    - The headers of the column are not included.
+
+    By modifying the args of `dm.to_csv()`, you will be able to save a SMI compatible file.
 
     Args:
         mols: a list of molecules.
@@ -296,9 +312,17 @@ def read_smi(
 ) -> Sequence[Mol]:
     """Read a list of smiles from am `.smi` file.
 
+    Note: We **strongly** recommend you to use `dm.read_csv` or `pandas.read_csv` instead
+    of `dm.read_smi` since `.smi` files are CSV-like format. The only difference are the
+    default settings which changes:
+
+    - The default separator is a space ` ` instead of a comma `,`.
+    - The headers of the column are not included.
+
+    By modifying the args of `dm.read_csv()`, you will be able to read an `.smi` files.
+
     Args:
         urlpath: Path to a file or a file-like object. Path can be remote or local.
-            Note: file-like object are not supported yet.
     """
 
     active_path = urlpath
@@ -310,7 +334,7 @@ def read_smi(
     # Copy to a local temporary path if the path is a remote one.
     if not fsspec.utils.can_be_local(str(urlpath)):
         active_path = pathlib.Path(tempfile.mkstemp()[1])
-        dm.utils.fs.copy_file(urlpath, active_path)
+        dm.utils.fs.copy_file(urlpath, active_path, force=True)
 
     # Read the molecules
     supplier = rdmolfiles.SmilesMolSupplier(str(active_path), titleLine=0)

@@ -18,11 +18,9 @@ Use conda:
 mamba install -c conda-forge datamol
 ```
 
-!!! tips
-You can replace `mamba` by `conda`.
+_**Tips:** You can replace `mamba` by `conda`._
 
-!!! note
-We highly recommend using a Conda Python distribution to install Datamol. The package is also pip installable if you need it: `pip install datamol`.
+_**Note:** We highly recommend using a [Conda Python distribution](https://github.com/conda-forge/miniforge) to install Datamol. The package is also pip installable if you need it: `pip install datamol`._
 
 ## Quick API Tour
 
@@ -75,10 +73,11 @@ Version compatibilities are an essential topic for production-software stacks. W
 
 See below the associated versions of Python and RDKit, for which a minor version of Datamol has been tested during its whole lifecycle.
 
-| `datamol` | `python`     | `rdkit`              |
-| --------- | ------------ | -------------------- |
-| `0.7`     | `[3.8, 3.9]` | `[2021.09, 2022.03]` |
-| `0.6`     | `[3.8, 3.9]` | `[2021.09]`          |
-| `0.5`     | `[3.8, 3.9]` | `[2021.03, 2021.09]` |
-| `0.4`     | `[3.8, 3.9]` | `[2020.09, 2021.03]` |
-| `0.3`     | `[3.8, 3.9]` | `[2020.09, 2021.03]` |
+| `datamol` | `python`           | `rdkit`                       |
+| --------- | ------------------ | ----------------------------- |
+| `0.8`     | `[3.8, 3.9, 3.10]` | `[2021.09, 2022.03, 2022.09]` |
+| `0.7`     | `[3.8, 3.9]`       | `[2021.09, 2022.03]`          |
+| `0.6`     | `[3.8, 3.9]`       | `[2021.09]`                   |
+| `0.5`     | `[3.8, 3.9]`       | `[2021.03, 2021.09]`          |
+| `0.4`     | `[3.8, 3.9]`       | `[2020.09, 2021.03]`          |
+| `0.3`     | `[3.8, 3.9]`       | `[2020.09, 2021.03]`          |

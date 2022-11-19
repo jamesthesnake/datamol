@@ -1,9 +1,10 @@
+from typing import cast
 import pytest
 
+import numpy as np
 import pandas as pd
 from rdkit import Chem
 from selfies import __version__ as selfies_version
-
 import datamol as dm
 
 
@@ -157,6 +158,19 @@ def test_to_df(datadir):
         "reference.year",
     ]
 
+    # EN: more than 500 will slow the test
+    large_mol_set = np.random.choice(mols, 500)
+    with dm.utils.perf.watch_duration(log=True) as w:
+        df_sequential = dm.to_df(large_mol_set, n_jobs=1)
+    sequential_time = w.duration
+
+    with w:
+        df_parallel = dm.to_df(large_mol_set, n_jobs=-1)
+    parallel_time = w.duration
+
+    pd.testing.assert_frame_equal(df_sequential, df_parallel)
+    # assert parallel_time < sequential_time
+
 
 def test_from_df(datadir):
     data_path = datadir / "TUBB3-observations.sdf"
@@ -305,3 +319,12 @@ def test_non_standard_inchi_edge_cases():
 
     assert dm.to_inchi_non_standard("NC(N)=O") == "InChI=1/CH4N2O/c2-1(3)4/h(H4,2,3,4)/f/h2-3H2"
     assert dm.to_inchikey_non_standard("N=C(N)O") == "XSQUKJJJFZCRTK-ZIALIONUNA-N"
+
+
+def test_to_smiles_with_indices():
+    mol = dm.to_mol("Cn1c(=O)c2c(ncn2C)n(C)c1=O")
+
+    # NOTE(hadim): not a great test I guess xD
+    smiles = dm.to_smiles(mol, with_atom_indices=True)
+    smiles = cast(str, smiles)
+    assert all([str(i) in smiles for i in range(13)])

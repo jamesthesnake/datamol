@@ -3,6 +3,7 @@ from typing import Callable
 from typing import Optional
 from typing import Sequence
 from typing import Union
+from typing import Tuple
 
 import operator
 import functools
@@ -42,7 +43,7 @@ def cluster_mols(
             and return molecular features. By default, the `dm.to_fp()` is used.
             Default to None.
         n_jobs: Number of jobs for parallelization. Let to 1 for no
-            parallelization. Set to None to use all available cores.
+            parallelization. Set to -1 to use all available cores.
     """
 
     if feature_fn is None:
@@ -77,7 +78,7 @@ def pick_diverse(
     dist_fn: Optional[Callable] = None,
     seed: int = 42,
     n_jobs: Optional[int] = 1,
-):
+) -> Tuple[int, list]:
     r"""Pick a set of diverse molecules based on they fingerprint.
 
     Args:
@@ -93,7 +94,7 @@ def pick_diverse(
             By default, the Tanimoto similarity will be used. Default to None.
         seed: seed for reproducibility
         n_jobs: Number of jobs for parallelization. Let to 1 for no
-            parallelization. Set to None to use all available cores.
+            parallelization. Set to -1 to use all available cores.
 
     Returns:
         picked_inds: index of the molecule that have been picked
@@ -130,7 +131,7 @@ def pick_centroids(
     seed: int = 42,
     method: str = "sphere",
     n_jobs: Optional[int] = 1,
-):
+) -> Tuple[int, list]:
     r"""Pick a set of `npick` centroids from a list of molecules.
 
     Args:
@@ -149,7 +150,7 @@ def pick_centroids(
         method: Picking method to use. One of  `sphere`, `maxmin` or any
             supported rdkit hierarchical clustering method such as `centroid`, `clink`, `upgma`
         n_jobs: Number of jobs for parallelization. Let to 1 for no
-            parallelization. Set to None to use all available cores.
+            parallelization. Set to -1 to use all available cores.
 
     Returns:
         picked_inds: index of the molecule that have been selected as centroids
@@ -213,7 +214,7 @@ def assign_to_centroids(
     feature_fn: Optional[Callable] = None,
     dist_fn: Optional[Callable] = None,
     n_jobs: Optional[int] = 1,
-):
+) -> Tuple[dict, list]:
     r"""Assign molecules to centroids. Each molecule will be assigned to the closest centroid.
 
     Args:
@@ -226,7 +227,7 @@ def assign_to_centroids(
             distance between them. You might use partial to set the fingerprints as input.
             By default, the Tanimoto similarity will be used. Default to None.
         n_jobs: Number of jobs for parallelization. Let to 1 for no
-            parallelization. Set to None to use all available cores.
+            parallelization. Set to -1 to use all available cores.
 
     Returns:
         clusters_map: dict of index mapping each centroid index to the molecule index in the cluster
