@@ -1,6 +1,15 @@
 from ._version import __version__
 
+from ._version import is_lower_than_current_rdkit_version
+from ._version import is_greater_than_current_rdkit_version
+from ._version import is_lower_eq_than_current_rdkit_version
+from ._version import is_greater_eq_than_current_rdkit_version
+
 from .types import Mol
+from .types import BondType
+from .types import ChemicalReaction
+from .types import Atom
+from .types import Bond
 
 from . import utils
 
@@ -56,6 +65,7 @@ from .mol import substructure_matching_bonds
 from .mol import add_hs
 from .mol import remove_hs
 from .mol import unique_id
+from .mol import hash_mol
 from .mol import clear_mol_props
 from .mol import strip_mol_to_core
 from .mol import make_scaffold_generic
@@ -69,11 +79,10 @@ from .cluster import assign_to_centroids
 
 from . import fragment
 from . import scaffold
-from . import reactions
-from . import actions
 from . import molar
 from . import descriptors
 from . import predictors
+from . import reactions
 
 from .convert import to_smiles
 from .convert import to_selfies

@@ -31,6 +31,7 @@ def to_smiles(
     randomize: bool = False,
     cxsmiles: bool = False,
     allow_to_fail: bool = False,
+    with_atom_indices: bool = False,
 ) -> Optional[str]:
     """Convert a mol to a SMILES.
 
@@ -45,6 +46,7 @@ def to_smiles(
         randomize: whether to randomize the generated smiles. Override `canonical`.
         cxsmiles: Whether to return a CXSMILES instead of a SMILES.
         allow_to_fail: Raise an error if the conversion to SMILES fails. Return None otherwise.
+        with_atom_indices: Whether to add atom indices to the SMILES.
     """
 
     if ordered and canonical is False:
@@ -53,6 +55,9 @@ def to_smiles(
     if randomize:
         mol = dm.randomize_atoms(mol)
         canonical = False
+
+    if with_atom_indices:
+        mol = dm.atom_indices_to_mol(mol, copy=True)
 
     smiles = None
     try:
@@ -364,6 +369,7 @@ def to_df(
     include_computed: bool = False,
     render_df_mol: bool = True,
     render_all_df_mol: bool = False,
+    n_jobs: Optional[int] = 1,
 ) -> Optional[pd.DataFrame]:
     """Convert a list of mols to a dataframe using each mol properties
     as a column.
@@ -381,6 +387,8 @@ def to_df(
             If called once, it will be applied for the newly created dataframe with
             mol in it.
         render_all_df_mol: Whether to render all pandas dataframe mol column as images.
+        n_jobs: Number of jobs for parallelization. Leave to 1 for no
+            parallelization. Set to -1 to use all available cores.
     """
 
     # Init a dataframe
@@ -388,7 +396,7 @@ def to_df(
 
     # Feed it with smiles
     if smiles_column is not None:
-        smiles = [to_smiles(mol) for mol in mols]
+        smiles = dm.parallelized(to_smiles, mols, n_jobs=n_jobs)
         df[smiles_column] = smiles
 
     # Add a mol column
@@ -396,15 +404,17 @@ def to_df(
         df[mol_column] = mols
 
     # Add any other properties present in the molecule
-    props = [
-        mol.GetPropsAsDict(
+    def _mol_to_prop_dict(mol):
+        return mol.GetPropsAsDict(
             includePrivate=include_private,
             includeComputed=include_computed,
         )
-        for mol in mols
-    ]
-    props_df = pd.DataFrame(props)
 
+    # EN: You cannot use `processes` here because all properties will be lost
+    # An alternative would be https://www.rdkit.org/docs/source/rdkit.Chem.PropertyMol.html
+    # But this has less overhead
+    props = dm.parallelized(_mol_to_prop_dict, mols, n_jobs=n_jobs, scheduler="threads")
+    props_df = pd.DataFrame(props)
     if smiles_column is not None and smiles_column in props_df.columns:
         logger.warning(
             f"The SMILES column name provided ('{smiles_column}') is already present in the properties"
@@ -495,9 +505,12 @@ def render_mol_df(df: pd.DataFrame):
     Args:
         df: a dataframe.
     """
-    # NOTE(hadim): replace by `PandaTools.ChangeMoleculeRendering` once
-    # https://github.com/rdkit/rdkit/issues/3563 is fixed.
-    _ChangeMoleculeRendering(df)
+
+    # NOTE(hadim): _ChangeMoleculeRendering is not relevant anymore with rdkit>=2022.09
+    if dm.is_lower_than_current_rdkit_version("2022.09"):
+        # NOTE(hadim): replace by `PandaTools.ChangeMoleculeRendering` once
+        # https://github.com/rdkit/rdkit/issues/3563 is fixed.
+        _ChangeMoleculeRendering(df)
 
 
 def _ChangeMoleculeRendering(frame=None, renderer="PNG"):

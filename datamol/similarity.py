@@ -1,10 +1,9 @@
 from typing import List
 from typing import Optional
 from typing import Union
+from typing import Any
 
 import functools
-
-from rdkit import Chem
 
 import numpy as np
 from sklearn.metrics import pairwise_distances_chunked
@@ -17,7 +16,7 @@ def pdist(
     mols: List[Union[str, dm.Mol]],
     n_jobs: Optional[int] = 1,
     squareform: bool = True,
-    **fp_args,
+    **fp_args: Any,
 ) -> np.ndarray:
     """Compute the pairwise tanimoto distance between the fingerprints of all the
     molecules in the input set.
@@ -25,7 +24,7 @@ def pdist(
     Args:
         mols: list of molecules
         n_jobs: Number of jobs for parallelization. Let to 1 for no
-            parallelization. Set to None to use all available cores.
+            parallelization. Set to -1 to use all available cores.
         squareform: Whether to return in square form (matrix) or in a condensed
             form (1D vector).
         **fp_args: list of args to pass to `to_fp()`.
@@ -57,7 +56,7 @@ def cdist(
     distances_chunk: bool = False,
     distances_chunk_memory: int = 1024,
     distances_n_jobs: int = -1,
-    **fp_args,
+    **fp_args: Any,
 ) -> np.ndarray:
     """Compute the tanimoto distance between the fingerprints of each pair of
     molecules of the two collections of inputs.
@@ -66,7 +65,7 @@ def cdist(
         mols1: list of molecules.
         mols2: list of molecules.
         n_jobs: Number of jobs for fingerprint computation. Let to 1 for no
-            parallelization. Set to None or -1 to use all available cores.
+            parallelization. Set to -1 to use all available cores.
         distances_chunk: Whether to use chunked computation.
         distances_chunk_memory: Memory size in MB to use for chunked computation.
         distances_n_jobs: Number of jobs for parallelization.

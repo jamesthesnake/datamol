@@ -4,6 +4,248 @@ Datamol Changelogs
 
 .. current developments
 
+v0.8.4
+====================
+
+**Changed:**
+
+* Add a comment recommending to not use the SMI file format.
+
+**Fixed:**
+
+* Fix a bug when reading a remote file with `dm.read_smi()`.
+
+**Authors:**
+
+* Hadrien Mary
+
+
+
+v0.8.3
+====================
+
+**Added:**
+
+* Parallelization to `to_df` for faster conversion to dataframe
+
+**Fixed:**
+
+* Error in docs
+
+**Authors:**
+
+* Emmanuel Noutahi
+
+
+
+v0.8.2
+====================
+
+**Fixed:**
+
+* Fix a typo in a tutorial.
+
+**Authors:**
+
+* Hadrien Mary
+* Valence-JonnyHsu
+
+
+
+v0.8.1
+====================
+
+**Changed:**
+
+* Remove the `rdkit` dependency in the setup.py to prevent pip to always override the conda rdkit package. See https://github.com/rdkit/rdkit/pull/2690#issuecomment-1295375416 for context.
+
+**Authors:**
+
+* Hadrien Mary
+
+
+
+v0.8.0
+====================
+
+**Added:**
+
+* `dm.Atom` and `dm.Bond` types.
+* Add RDKit as a pypi dep.
+* Add `datamol.hash_mol()` based on `rdkit.Chem.RegistrationHash`.
+
+**Changed:**
+
+* RDKit 2022.09: use `Draw.shouldKekulize` instead of `Draw._okToKekulizeMol`.
+* RDKit 2022.09: don't use `dm.convert._ChangeMoleculeRendering` for RDKit >=2022.09.
+
+**Authors:**
+
+* Hadrien Mary
+
+
+
+v0.7.18
+====================
+
+**Added:**
+
+* Added argument product_index in `select_reaction_output`.  It allows to return all products and a product of interest by the index.
+* Updated unit tests.
+
+**Authors:**
+
+* Lu Zhu
+
+
+
+v0.7.17
+====================
+
+**Added:**
+
+* Added a new chemical reaction module for rdkit chemical reactions and attachment manipulations.
+
+**Fixed:**
+
+
+
+**Authors:**
+
+* Hadrien Mary
+* Lu Zhu
+
+
+
+v0.7.16
+====================
+
+**Changed:**
+
+* Bump upstream GH actions versions.
+* `dm.fs.copy_dir` now uses the internal fsspec `copy` when the two source and destination fs are the same. It makes the copy much faster.
+
+**Fixed:**
+
+* Use `os.PathLike` to recognize a broader range of string-based path inputs in the `dm.fs` module. It prevents file objects such as `py._path.local.LocalPath` not being recognized as path.
+
+**Authors:**
+
+* Hadrien Mary
+
+
+
+v0.7.15
+====================
+
+**Fixed:**
+
+* Missing header in the fragment tutorial.
+
+**Authors:**
+
+* Hadrien Mary
+* Valence-JonnyHsu
+
+
+
+v0.7.14
+====================
+
+**Added:**
+
+* Add `with_atom_indices` to `dm.to_smiles`. If enable, atom indices will be added to the SMILES.
+
+**Changed:**
+
+* Changed the default for `dm.fs.is_file()` from `True`` to `False`.
+* Refactor the API doc to breakdown all the submodules in individual doc. Thanks to @MichelML for the suggestion.
+* Re-enable pipy activity in rever.
+
+**Fixed:**
+
+* Minor typo in the documentation of `dm.conformers.generate()`
+
+**Authors:**
+
+* Cas
+* Hadrien Mary
+* Valence-JonnyHsu
+
+
+
+v0.7.13
+====================
+
+**Added:**
+
+* New aligning tutorials.
+
+**Removed:**
+
+* `rdkit` dep from pypi (the dep is only on the conda forge package)
+
+**Fixed:**
+
+* Grammar in tutorials.
+
+**Authors:**
+
+* Hadrien Mary
+* Valence-JonnyHsu
+
+
+
+v0.7.12
+====================
+
+**Fixed:**
+
+* Fix minor typos in tutorials
+
+**Authors:**
+
+* Hadrien Mary
+* michelml
+
+
+
+v0.7.11
+====================
+
+**Added:**
+
+* Add configurations for dev containers based on the micromamba Docker image. More informations about dev container at https://docs.github.com/en/codespaces/setting-up-your-project-for-codespaces/introduction-to-dev-containers.
+* support for two additional forcefields: MMFF94s with and without electrostatic component
+* energies output along with delta-energy to lowest energy conformer
+
+**Changed:**
+
+* API of dm.conformers.generate() to support choice of forcefield.  In addition ewindow and eratio flags added to reject high energy conformers, either on absoute scale, or as ratio to rotatable bonds
+* Revamped all the datamol tutorials and add new tutorials. Huge thanks to @Valence-jonnyhsu for leading the refactoring of the datamol tutorials.
+* Improve documentation for `dm.standardize_mol()`
+* Multiple various docstring and typing improvments.
+* Embed the cdk2.sdf and solubility_*.sdf files within the datamol package to prevent issue with the RDKit config dir.
+* Enable strict mode on the documentation to prevent any issues and inconsistency with the types and docstrings of datamol.
+* Refactor micromamba CI to use latest and simplify it.
+
+**Removed:**
+
+* Remove unused and unmaintained `dm.actions` and `dm.reactions` module.
+* Remove `copy` args from `add_hs` and `remove_hs` (RDKit already returns copies).
+
+**Fixed:**
+
+* Errors in ECFP fingerprints that computes FCFP instead of ECFP.
+
+**Authors:**
+
+* Emmanuel Noutahi
+* Hadrien Mary
+* Matt
+
+
+
 v0.7.10
 ====================
 
