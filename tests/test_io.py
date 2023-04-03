@@ -39,16 +39,50 @@ def test_read_excel_with_mol_col(datadir):
 
 
 def test_read_sdf(datadir):
-
     data_path = datadir / "TUBB3-observations.sdf"
+
+    # Read all sdf
     mols = dm.read_sdf(data_path)
     assert len(mols) == 10
     for mol in mols:
         assert isinstance(mol, Chem.rdchem.Mol)
 
+    # Read 5 molecules
+    mols = dm.read_sdf(data_path, max_num_mols=5)
+    assert len(mols) == 5
+    for mol in mols:
+        assert isinstance(mol, Chem.rdchem.Mol)
+
+    # Read more than the max number of mols in the file
+    mols = dm.read_sdf(data_path, max_num_mols=111)
+    assert len(mols) == 10
+    for mol in mols:
+        assert isinstance(mol, Chem.rdchem.Mol)
+
+    data_path = datadir / "TUBB3-observations-last-broken.sdf"
+
+    # Read all sdf with last mol being broken
+    mols = dm.read_sdf(data_path)
+    assert len(mols) == 9
+    for mol in mols:
+        assert isinstance(mol, Chem.rdchem.Mol)
+
+    # Read all sdf with last mol being broken
+    mols = dm.read_sdf(data_path, discard_invalid=False)
+    assert len(mols) == 10
+    for mol in mols[:-1]:
+        assert isinstance(mol, Chem.rdchem.Mol)
+    assert mols[-1] is None
+
+    # Read all sdf with last mol being broken
+    df = dm.read_sdf(data_path, discard_invalid=False, as_df=True, mol_column="mols")
+    assert len(mols) == 10
+    for mol in df["mols"].iloc[:-1]:
+        assert isinstance(mol, Chem.rdchem.Mol)
+    assert df["mols"].iloc[-1] is None
+
 
 def test_read_sdf_gz(datadir):
-
     data_path = datadir / "TUBB3-observations.sdf.gz"
     mols = dm.read_sdf(data_path)
     assert len(mols) == 10
@@ -57,7 +91,6 @@ def test_read_sdf_gz(datadir):
 
 
 def test_read_sdf_as_df(datadir):
-
     data_path = datadir / "TUBB3-observations.sdf"
     df = dm.read_sdf(data_path, as_df=True)
     assert df.shape == (10, 12)
@@ -85,7 +118,6 @@ def test_read_sdf_as_df_parallel(datadir):
 
 
 def test_read_sdf_as_df_mol_col(datadir):
-
     data_path = datadir / "TUBB3-observations.sdf"
     df = dm.read_sdf(data_path, as_df=True, mol_column="mol")
     assert "mol" in df.columns
@@ -93,7 +125,6 @@ def test_read_sdf_as_df_mol_col(datadir):
 
 
 def test_read_sdf_gz_as_df(datadir):
-
     data_path = datadir / "TUBB3-observations.sdf.gz"
     df = dm.read_sdf(data_path, as_df=True)
 
@@ -139,7 +170,6 @@ def test_to_sdf_mols(datadir, tmp_path):
 
 
 def test_to_from_text(tmp_path):
-
     temp_file = tmp_path / "mols.smi"
 
     smiles_list = [
@@ -174,7 +204,6 @@ def test_to_from_text(tmp_path):
 
 
 def test_to_sdf_single_mol(tmp_path):
-
     sdf_path = tmp_path / "test.sdf"
 
     smiles = "CC1(C2C(C3C(C(=O)C(=C(C3(C(=O)C2=C(C4=C1C=CC=C4O)O)O)O)C(=O)N)N(C)C)O)O"
@@ -186,7 +215,6 @@ def test_to_sdf_single_mol(tmp_path):
 
 
 def test_sdf_props_and_conformer_preserved(tmp_path):
-
     sdf_path = tmp_path / "test.sdf"
 
     # Generate an SDF file
@@ -213,6 +241,34 @@ def test_sdf_props_and_conformer_preserved(tmp_path):
     np.testing.assert_almost_equal(conf.GetPositions(), pos, decimal=4)
 
 
+def test_read_mol2(datadir):
+    data_path = datadir / "test.mol2"
+
+    # to list of mols
+    mols = dm.read_mol2file(data_path)
+
+    assert isinstance(mols[0], Chem.rdchem.Mol)
+    assert isinstance(mols[1], Chem.rdchem.Mol)
+    assert isinstance(mols[2], Chem.rdchem.Mol)
+    # cases where mol2 formats are damaged
+    assert mols[3] is None
+    assert mols[4] is None
+    assert mols[5] is None
+    assert mols[6] is None
+    assert mols[7] is None
+
+    firstMol = dm.to_mol("c1ccncc1")
+    secondMol = dm.to_mol("c1c[nH]cn1")
+
+    assert dm.same_mol(mols[0], firstMol)
+    assert dm.same_mol(mols[1], secondMol)
+    assert dm.same_mol(mols[2], secondMol)
+
+    # a case where exception is raised because of None values
+    with pytest.raises(ValueError):
+        mols = dm.read_mol2file(data_path, fail_if_invalid=True)
+
+
 def test_read_save_molblock():
     mol = dm.to_mol("Cn1c(=O)c2c(ncn2C)n(C)c1=O")
 
@@ -230,7 +286,6 @@ def test_read_save_molblock():
 
 
 def test_read_molblock_invalid():
-
     mol = dm.read_molblock("hello")
     assert mol is None
 
@@ -260,3 +315,112 @@ def test_to_xlsx_empty():
     mols = [None]
     with pytest.raises(ValueError):
         dm.to_xlsx(mols, "/dev/null")  # type: ignore
+
+
+def test_read_pdbblock():
+    pdbblock = """HETATM    1  N1  UNL     1       3.707  -1.649   1.733  1.00  0.00           N
+HETATM    2  C1  UNL     1       2.987  -1.188   0.938  1.00  0.00           C
+HETATM    3  C2  UNL     1       1.869  -0.581   0.250  1.00  0.00           C
+HETATM    4  C3  UNL     1       1.632   0.783   0.355  1.00  0.00           C
+HETATM    5  C4  UNL     1       0.344   1.270   0.178  1.00  0.00           C
+HETATM    6  C5  UNL     1      -0.755   0.429   0.049  1.00  0.00           C
+HETATM    7  N2  UNL     1      -1.944   0.727   0.745  1.00  0.00           N
+HETATM    8  C6  UNL     1      -3.233   0.937   0.173  1.00  0.00           C
+HETATM    9  C7  UNL     1      -4.177   1.582   1.134  1.00  0.00           C
+HETATM   10  C8  UNL     1      -5.125   2.560   0.500  1.00  0.00           C
+HETATM   11  C9  UNL     1      -4.297   3.560  -0.257  1.00  0.00           C
+HETATM   12  C10 UNL     1      -3.440   2.952  -1.324  1.00  0.00           C
+HETATM   13  C11 UNL     1      -3.253   1.476  -1.208  1.00  0.00           C
+HETATM   14  N3  UNL     1      -0.470  -0.872  -0.207  1.00  0.00           N
+HETATM   15  C12 UNL     1       0.804  -1.335  -0.226  1.00  0.00           C
+HETATM   16  N4  UNL     1       0.815  -2.626  -0.634  1.00  0.00           N
+HETATM   17  C13 UNL     1      -0.473  -3.035  -0.715  1.00  0.00           C
+HETATM   18  C14 UNL     1      -0.971  -4.331  -0.663  1.00  0.00           C
+HETATM   19  C15 UNL     1      -2.225  -4.591  -0.133  1.00  0.00           C
+HETATM   20  C16 UNL     1      -3.085  -3.511   0.005  1.00  0.00           C
+HETATM   21  C17 UNL     1      -2.511  -2.281   0.175  1.00  0.00           C
+HETATM   22  C18 UNL     1      -1.271  -1.954  -0.359  1.00  0.00           C
+HETATM   23  C19 UNL     1       2.789   1.645   0.539  1.00  0.00           C
+HETATM   24  C20 UNL     1       3.510   2.001  -0.595  1.00  0.00           C
+HETATM   25  C21 UNL     1       4.873   2.200  -0.578  1.00  0.00           C
+HETATM   26  C22 UNL     1       5.560   2.162   0.605  1.00  0.00           C
+HETATM   27  C23 UNL     1       4.838   1.985   1.767  1.00  0.00           C
+HETATM   28  C24 UNL     1       3.502   1.683   1.730  1.00  0.00           C
+CONECT    1    2    2    2
+CONECT    2    3
+CONECT    3    4    4   15
+CONECT    4    5   23
+CONECT    5    6    6
+CONECT    6    7   14
+CONECT    7    8
+CONECT    8    9   13
+CONECT    9   10
+CONECT   10   11
+CONECT   11   12
+CONECT   12   13
+CONECT   14   15   22
+CONECT   15   16   16
+CONECT   16   17
+CONECT   17   18   18   22
+CONECT   18   19
+CONECT   19   20   20
+CONECT   20   21
+CONECT   21   22   22
+CONECT   23   24   24   28
+CONECT   24   25
+CONECT   25   26   26
+CONECT   26   27
+CONECT   27   28   28
+END"""
+
+    mol = dm.read_pdbblock(pdbblock)
+
+    print(dm.to_smiles(mol))
+
+    assert mol is not None
+    assert mol.GetNumAtoms() == 28
+    assert dm.to_inchikey(mol) == "ZVAMKEUGOUZEJZ-UHFFFAOYSA-N"
+
+    conf = mol.GetConformer()
+    assert conf.Is3D()
+
+
+def test_to_pdbblock():
+    mol = dm.to_mol("N#Cc1c(cc(NC2CCCCC2)n2c1nc1ccccc21)-c1ccccc1")
+    molblock = dm.to_pdbblock(mol)
+
+    assert "HETATM" in molblock
+    assert "CONECT" in molblock
+    assert "C19" in molblock
+    assert "C11" in molblock
+
+    mol2 = dm.read_pdbblock(molblock)
+    assert dm.to_inchikey(mol2) == dm.to_inchikey(mol)
+
+
+def test_read_pdbfile(tmp_path):
+    mol = dm.to_mol("N#Cc1c(cc(NC2CCCCC2)n2c1nc1ccccc21)-c1ccccc1")
+    mol = dm.conformers.generate(mol, n_confs=1)
+
+    pdb_path = tmp_path / "test.pdb"
+    dm.to_pdbfile(mol, pdb_path)
+
+    mol2 = dm.read_pdbfile(pdb_path)
+    assert dm.to_inchikey(mol2) == dm.to_inchikey(mol)
+
+
+def test_to_pdbfile(tmp_path):
+    mol = dm.to_mol("N#Cc1c(cc(NC2CCCCC2)n2c1nc1ccccc21)-c1ccccc1")
+    mol = dm.conformers.generate(mol, n_confs=1)
+
+    pdb_path = tmp_path / "test.pdb"
+
+    dm.to_pdbfile(mol, pdb_path)
+
+    with open(pdb_path) as f:
+        molblock = f.read()
+
+    assert "HETATM" in molblock
+    assert "CONECT" in molblock
+    assert "C19" in molblock
+    assert "C11" in molblock

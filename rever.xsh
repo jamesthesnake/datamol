@@ -1,9 +1,8 @@
 # Configuration
 
 $PROJECT = $GITHUB_REPO  = 'datamol'
-$GITHUB_ORG = 'datamol-org'
-$PUSH_TAG_REMOTE = 'git@github.com:datamol-org/datamol.git'
-$GHRELEASE_TARGET = 'main'
+$GITHUB_ORG = 'datamol-io'
+$PUSH_TAG_REMOTE = 'git@github.com:datamol-io/datamol.git'
 
 # Logic
 
@@ -16,11 +15,4 @@ $CHANGELOG_FILENAME = 'CHANGELOG.rst'
 $CHANGELOG_TEMPLATE = 'TEMPLATE.rst'
 $CHANGELOG_NEWS = 'news'
 
-$PYPI_BUILD_COMMANDS = ['sdist']
-$PYPI_UPLOAD = True
-
-$ACTIVITIES = ['check', 'authors', 'changelog', 'version_bump', 'tag', 'push_tag', 'ghrelease', 'pypi']
-
-$VERSION_BUMP_PATTERNS = [('datamol/_version.py', r'__version__\s*=.*', "__version__ = \"$VERSION\""),
-                          ('setup.py', r'version\s*=.*,', "version=\"$VERSION\",")
-                          ]
+$ACTIVITIES = ['check', 'authors', 'changelog', 'tag', 'push_tag']

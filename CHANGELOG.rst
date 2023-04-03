@@ -4,6 +4,140 @@ Datamol Changelogs
 
 .. current developments
 
+v0.9.2
+====================
+
+**Added:**
+
+* A multi-mol2 file reader that converts into rdkit objects
+
+**Fixed:**
+
+* Updated the logging in `_sanifix4.py` to use the RDKit logger
+
+**Authors:**
+
+* Cas
+* Hadrien Mary
+* Pakman450
+* Therence1
+
+
+
+v0.9.1
+====================
+
+**Changed:**
+
+* moved `CODE_OF_CONDUCT.md`, `CODEOWNDERS`, `CONTRIBUTING.md` and `SECURITY.md` to `.github/` dir
+* Improve and automate the release process.
+* Adapt the logo and colors to the new branding.
+* Replace `datamol-org` to `datamol-io` everywhere in the codebase due to GH org rename.
+
+**Authors:**
+
+* Hadrien Mary
+* Saurav Maheshkar
+
+
+
+v0.9.0
+====================
+
+**Changed:**
+
+* Add `TypeAlias` types to `datamol.types.*`.
+* Drop `setup.py` in favour of `pyproject.toml` only.
+* Replace unmaintained `appdirs` by maintained `platformdirs`.
+* Enable weekly tests on `main` branch.
+
+**Fixed:**
+
+* Add missing fcfp func in fingerprint functions dict
+
+**Authors:**
+
+* Hadrien Mary
+* michelml
+
+
+
+v0.8.8
+====================
+
+**Added:**
+
+* Add PDB read/writer functions: `dm.to_pdbblock()`, `dm.read_pdbblock()`, `dm.read_pdbfile()`, `dm.to_pdbfile()`
+
+**Changed:**
+
+* Improve output type in `to_df`.`
+
+**Authors:**
+
+* Hadrien Mary
+
+
+
+v0.8.7
+====================
+
+**Added:**
+
+* Add multiple utilities to work with mapped SMILES with hydrogens.
+* Add `dm.clear_atom_props()` to remove atom's properties.
+* Add `dm.clear_atom_map_number()` to remove the atom map number property.
+* Add `dm.get_atom_positions()` to retrieve the atomic positions of a conformer of a molecule.
+* Add `dm.set_atom_positions()` to add a new confomer to a molecule given a list of atomic positions.
+
+**Changed:**
+
+* Add new arguments to `dm.to_mol`: `allow_cxsmiles`, `parse_name`, `remove_hs` and `strict_cxsmiles`. Refers to the docstring for the details.
+* Set `copy` to `True` by default to `dm.atom_indices_to_mol()`.
+* Allow to specify the property keys to clear in `dm.clear_mol_props()`. If not set, the original default beahviour is to clear everything.
+
+**Authors:**
+
+* Hadrien Mary
+
+
+
+v0.8.6
+====================
+
+**Fixed:**
+
+* Ensure rdkit 2021.03 works with latest datamol. The support is not "official" but only a single function must be adapted so it's ok.
+
+**Authors:**
+
+* Hadrien Mary
+
+
+
+v0.8.5
+====================
+
+**Added:**
+
+* Support for `max_num_mols` in `dm.read_sdf()`. Useful when files are large and debugging code.
+* Support for returning the invalid molecules in `dm.read_sdf`. Useful when we need to know which one failed.
+* Support for more compression formats when reading SDF files using `fssep.open(..., compression="infer")`.
+* Add `CODEOWNERS` file.
+* Add `dm.descriptors.n_spiro_atoms` and `dm.descriptors.n_stereo_centers_unspecified`.
+
+**Changed:**
+
+* Overload output types for `dm.read_sdf` and `dm.data.*`.
+* Reduce tests duration (especially in CI).
+
+**Authors:**
+
+* DomInvivo
+* Hadrien Mary
+
+
+
 v0.8.4
 ====================
 
