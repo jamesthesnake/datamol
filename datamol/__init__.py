@@ -18,7 +18,6 @@ from .utils import parallelized_with_batches
 from .utils import JobRunner
 from .utils import fs
 
-from . import data
 from .data import freesolv
 from .data import cdk2
 from .data import solubility
@@ -71,6 +70,10 @@ from .mol import strip_mol_to_core
 from .mol import make_scaffold_generic
 from .mol import to_scaffold_murcko
 from .mol import compute_ring_system
+from .mol import clear_atom_props
+from .mol import clear_atom_map_number
+from .mol import set_atom_positions
+from .mol import get_atom_positions
 
 from .cluster import cluster_mols
 from .cluster import pick_diverse
@@ -116,9 +119,14 @@ from .io import read_sdf
 from .io import to_sdf
 from .io import to_smi
 from .io import read_smi
+from .io import read_mol2file
 from .io import read_molblock
 from .io import to_molblock
 from .io import to_xlsx
+from .io import read_pdbblock
+from .io import to_pdbblock
+from .io import read_pdbfile
+from .io import to_pdbfile
 
 from .isomers import enumerate_stereoisomers
 from .isomers import enumerate_tautomers

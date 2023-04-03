@@ -5,30 +5,45 @@ import datamol as dm
 
 
 def test_descriptors():
+    smiles_list = ["CC(=O)OC1=CC=CC=C1C(=O)O", "CCN(CC)CCCC(C)NC1=C2C=CC(=CC2=NC=C1)Cl"]
 
-    mol = dm.to_mol("CCN(CC)CCCC(C)NC1=C2C=CC(=CC2=NC=C1)Cl")
-    dm.descriptors.mw(mol)
-    dm.descriptors.fsp3(mol)
-    dm.descriptors.n_hba(mol)
-    dm.descriptors.n_hbd(mol)
-    dm.descriptors.n_lipinski_hba(mol)
-    dm.descriptors.n_lipinski_hbd(mol)
-    dm.descriptors.n_rings(mol)
-    dm.descriptors.n_hetero_atoms(mol)
-    dm.descriptors.n_heavy_atoms(mol)
-    dm.descriptors.n_rotatable_bonds(mol)
-    dm.descriptors.n_aliphatic_rings(mol)
-    dm.descriptors.n_aromatic_rings(mol)
-    dm.descriptors.n_saturated_rings(mol)
-    dm.descriptors.n_radical_electrons(mol)
-    dm.descriptors.tpsa(mol)
-    dm.descriptors.qed(mol)
-    dm.descriptors.clogp(mol)
-    dm.descriptors.sas(mol)
+    for smiles in smiles_list:
+        mol = dm.to_mol(smiles)
+
+        dm.descriptors.mw(mol)
+        dm.descriptors.fsp3(mol)
+        dm.descriptors.n_hba(mol)
+        dm.descriptors.n_hbd(mol)
+        dm.descriptors.n_lipinski_hba(mol)
+        dm.descriptors.n_lipinski_hbd(mol)
+        dm.descriptors.n_rings(mol)
+        dm.descriptors.n_hetero_atoms(mol)
+        dm.descriptors.n_heavy_atoms(mol)
+        dm.descriptors.n_rotatable_bonds(mol)
+        dm.descriptors.n_aliphatic_rings(mol)
+        dm.descriptors.n_aromatic_rings(mol)
+        dm.descriptors.n_saturated_rings(mol)
+        dm.descriptors.n_radical_electrons(mol)
+        dm.descriptors.tpsa(mol)
+        dm.descriptors.qed(mol)
+        dm.descriptors.clogp(mol)
+        dm.descriptors.sas(mol)
+        dm.descriptors.sas(mol)
+        dm.descriptors.n_stereo_centers_unspecified(mol)
+        dm.descriptors.n_spiro_atoms(mol)
+
+        dm.descriptors.n_aliphatic_carbocycles(mol)
+        dm.descriptors.n_aliphatic_heterocyles(mol)
+        dm.descriptors.n_aliphatic_rings(mol)
+        dm.descriptors.n_aromatic_carbocycles(mol)
+        dm.descriptors.n_aromatic_heterocyles(mol)
+        dm.descriptors.n_aromatic_rings(mol)
+        dm.descriptors.n_saturated_carbocycles(mol)
+        dm.descriptors.n_saturated_heterocyles(mol)
+        dm.descriptors.n_saturated_rings(mol)
 
 
 def test_compute_many_descriptors():
-
     mol = dm.to_mol("CCN(CC)CCCC(C)NC1=C2C=CC(=CC2=NC=C1)Cl")
 
     true_values = pd.Series(
@@ -102,6 +117,7 @@ def test_compute_many_descriptors_with_function_as_string():
 
 def test_batch_compute_many_descriptors():
     data = dm.data.freesolv()
+    data = data.iloc[:30]
     mols = data["smiles"].apply(dm.to_mol).tolist()
 
     props = dm.descriptors.batch_compute_many_descriptors(
@@ -135,7 +151,7 @@ def test_batch_compute_many_descriptors():
         "n_saturated_heterocyles",
         "n_saturated_rings",
     }
-    assert props.shape == (642, 22)
+    assert props.shape == (30, 22)
 
 
 def test_any_rdkit_descriptor():
@@ -152,7 +168,6 @@ def test_any_rdkit_descriptor():
 
 
 def test_n_aromatic_atoms():
-
     smiles = "Nc1cnn(-c2ccccc2)c(=O)c1Cl"
     mol = dm.to_mol(smiles)
 

@@ -1,6 +1,7 @@
 from typing import Union
 from typing import List
 from typing import Optional
+from typing import cast
 
 import re
 
@@ -61,7 +62,6 @@ def to_smiles(
 
     smiles = None
     try:
-
         if cxsmiles:
             smiles = rdmolfiles.MolToCXSmiles(
                 mol,
@@ -83,7 +83,6 @@ def to_smiles(
             )
 
     except Exception as e:
-
         if allow_to_fail:
             raise e
 
@@ -370,7 +369,7 @@ def to_df(
     render_df_mol: bool = True,
     render_all_df_mol: bool = False,
     n_jobs: Optional[int] = 1,
-) -> Optional[pd.DataFrame]:
+) -> pd.DataFrame:
     """Convert a list of mols to a dataframe using each mol properties
     as a column.
 
@@ -405,10 +404,13 @@ def to_df(
 
     # Add any other properties present in the molecule
     def _mol_to_prop_dict(mol):
-        return mol.GetPropsAsDict(
-            includePrivate=include_private,
-            includeComputed=include_computed,
-        )
+        if mol is not None:
+            return mol.GetPropsAsDict(
+                includePrivate=include_private,
+                includeComputed=include_computed,
+            )
+        else:
+            return {}
 
     # EN: You cannot use `processes` here because all properties will be lost
     # An alternative would be https://www.rdkit.org/docs/source/rdkit.Chem.PropertyMol.html
@@ -426,7 +428,6 @@ def to_df(
 
     # Render mol column to images
     if render_df_mol is True and mol_column is not None:
-
         render_mol_df(df)
 
         if render_all_df_mol:
@@ -470,16 +471,15 @@ def from_df(
     if mol_column is None:
         for col in df.columns:
             if isinstance(df[col].iloc[0], Mol):
+                col = cast(str, col)
                 mol_column = col
 
-    def _row_to_mol(row):
-
+    def _row_to_mol(row) -> Optional[Mol]:
         props = row.to_dict()
 
         if mol_column is not None:
             mol = props.pop(mol_column)
         else:
-
             if conserve_smiles:
                 smiles = props[smiles_column]
             else:
@@ -495,7 +495,7 @@ def from_df(
         dm.set_mol_props(mol, props)
         return mol
 
-    return df.apply(_row_to_mol, axis=1).tolist()
+    return df.apply(_row_to_mol, axis=1).tolist()  # type: ignore
 
 
 def render_mol_df(df: pd.DataFrame):
@@ -526,14 +526,14 @@ def _ChangeMoleculeRendering(frame=None, renderer="PNG"):
     import types
 
     if renderer == "String":
-        Chem.rdchem.Mol.__str__ = PandasTools.PrintDefaultMolRep
+        Chem.rdchem.Mol.__str__ = PandasTools.PrintDefaultMolRep  # type: ignore
     else:
         Chem.rdchem.Mol.__str__ = PandasTools.PrintAsBase64PNGString
 
     if frame is not None:
-        frame.to_html = types.MethodType(PandasTools.patchPandasHTMLrepr, frame)
+        frame.to_html = types.MethodType(PandasTools.patchPandasHTMLrepr, frame)  # type: ignore
 
-    if PandasTools.defPandasRepr is not None and renderer == "String":
+    if PandasTools.defPandasRepr is not None and renderer == "String":  # type: ignore
         frame._repr_html_ = types.MethodType(PandasTools.defPandasRepr, frame)  # type: ignore
     else:
         frame._repr_html_ = types.MethodType(PandasTools.patchPandasrepr, frame)  # type: ignore
@@ -547,7 +547,6 @@ def _process_inchi_options(
     tautomerism_15: bool = True,
     options: Optional[List[str]] = None,
 ):
-
     inchi_options = []
 
     if fixed_hydrogen_layer:
