@@ -5,12 +5,13 @@ from typing import Sequence
 from typing import IO
 from typing import Any
 from typing import cast
+from typing import overload
+from typing import Literal
 
 import os
 import io
 import tempfile
 import pathlib
-import gzip
 
 from rdkit.Chem import PandasTools
 from rdkit.Chem import rdmolfiles
@@ -43,7 +44,8 @@ def read_csv(
         df: a `pandas.DataFrame`
     """
 
-    df: pd.DataFrame = pd.read_csv(urlpath, **kwargs)  # type: ignore
+    df = pd.read_csv(urlpath, **kwargs)
+    df = cast(pd.DataFrame, df)
 
     if smiles_column is not None:
         PandasTools.AddMoleculeColumnToFrame(df, smiles_column, mol_column)
@@ -81,6 +83,79 @@ def read_excel(
     return df
 
 
+def _get_supplier_mols(
+    supplier: rdmolfiles.ForwardSDMolSupplier,
+    max_num_mols: Optional[int],
+) -> List[dm.Mol]:
+    """Given a supplier, read the molecules until we reach the `max_num_mols` limit.
+    Useful when reading SDF files.
+    """
+    if max_num_mols is None:
+        mols = list(supplier)
+    else:
+        mols = []
+        for _ in range(max_num_mols):
+            try:
+                mols.append(next(supplier))
+            except StopIteration:
+                break
+    return mols
+
+
+@overload
+def read_sdf(
+    urlpath: Union[str, os.PathLike, IO],
+    sanitize: bool = ...,
+    as_df: Literal[False] = ...,
+    smiles_column: Optional[str] = ...,
+    mol_column: Optional[str] = ...,
+    include_private: bool = ...,
+    include_computed: bool = ...,
+    strict_parsing: bool = ...,
+    remove_hs: bool = ...,
+    max_num_mols: Optional[int] = ...,
+    discard_invalid: bool = ...,
+    n_jobs: Optional[int] = ...,
+) -> List[Mol]:
+    ...
+
+
+@overload
+def read_sdf(
+    urlpath: Union[str, os.PathLike, IO],
+    sanitize: bool = ...,
+    as_df: Literal[True] = ...,
+    smiles_column: Optional[str] = ...,
+    mol_column: Optional[str] = ...,
+    include_private: bool = ...,
+    include_computed: bool = ...,
+    strict_parsing: bool = ...,
+    remove_hs: bool = ...,
+    max_num_mols: Optional[int] = ...,
+    discard_invalid: bool = ...,
+    n_jobs: Optional[int] = ...,
+) -> pd.DataFrame:
+    ...
+
+
+@overload
+def read_sdf(
+    urlpath: Union[str, os.PathLike, IO],
+    sanitize: bool = ...,
+    as_df: bool = ...,
+    smiles_column: Optional[str] = ...,
+    mol_column: Optional[str] = ...,
+    include_private: bool = ...,
+    include_computed: bool = ...,
+    strict_parsing: bool = ...,
+    remove_hs: bool = ...,
+    max_num_mols: Optional[int] = ...,
+    discard_invalid: bool = ...,
+    n_jobs: Optional[int] = ...,
+) -> Union[List[Mol], pd.DataFrame]:
+    ...
+
+
 def read_sdf(
     urlpath: Union[str, os.PathLike, IO],
     sanitize: bool = True,
@@ -91,6 +166,8 @@ def read_sdf(
     include_computed: bool = False,
     strict_parsing: bool = True,
     remove_hs: bool = True,
+    max_num_mols: Optional[int] = None,
+    discard_invalid: bool = True,
     n_jobs: Optional[int] = 1,
 ) -> Union[List[Mol], pd.DataFrame]:
     """Read an SDF file.
@@ -110,6 +187,10 @@ def read_sdf(
             `as_df` is True.
         strict_parsing: If set to false, the parser is more lax about correctness of the contents.
         remove_hs: Whether to remove the existing hydrogens in the SDF files.
+        max_num_mols: Maximum number of molecules to read from the SDF file. Read all by default when set
+            to `None`.
+        discard_invalid: Discard the molecules that failed to be read correctly. Otherwise,
+            invalid molecules will be loaded as `None`.
         n_jobs: Optional number of jobs for parallelization of `to_df`. Leave to 1 for no
             parallelization. Set to -1 to use all available cores. Only relevant is `as_df` is True
     """
@@ -122,26 +203,22 @@ def read_sdf(
             strictParsing=strict_parsing,
             removeHs=remove_hs,
         )
-        mols = list(supplier)
+        mols = _get_supplier_mols(supplier, max_num_mols)
 
     # Regular local or remote paths
     else:
-        with fsspec.open(urlpath) as f:
-
-            # Handle gzip file if needed
-            if str(urlpath).endswith(".gz") or str(urlpath).endswith(".gzip"):
-                f = gzip.open(f)  # type: ignore
-
+        with fsspec.open(urlpath, compression="infer") as f:
             supplier = rdmolfiles.ForwardSDMolSupplier(
                 f,
                 sanitize=sanitize,
                 strictParsing=strict_parsing,
                 removeHs=remove_hs,
             )
-            mols = list(supplier)
+            mols = _get_supplier_mols(supplier, max_num_mols)
 
     # Discard None values
-    mols = [mol for mol in mols if mol is not None]
+    if discard_invalid:
+        mols = [mol for mol in mols if mol is not None]
 
     # Convert to dataframe
     if as_df:
@@ -196,6 +273,53 @@ def to_sdf(
             for mol in mols:
                 writer.write(mol)
             writer.close()
+
+
+def read_mol2file(
+    urlpath: Union[str, os.PathLike, IO],
+    sanitize: bool = True,
+    cleanup_substructures: bool = True,
+    remove_hs: bool = True,
+    fail_if_invalid: bool = False,
+) -> List[Mol]:
+    """Read a Mol2 File
+
+    Args:
+        urlpath: Path to a file or a file-like object. Path can be remote or local.
+        sanitize: Whether to sanitize the molecules.
+        remove_hs: Whether to remove the existing hydrogens in the SDF files.
+        cleanup_substructures: Whether to clean up substructure in the Mol2 Files.
+        fail_if_invalid: If set to true, the parser will raise an exception if the molecule is invalid
+            instead of returning None.
+    """
+
+    block = []
+    mols = []
+    with fsspec.open(urlpath, compression="infer") as f:
+        fReadLines = f.readlines()
+        # reversing due to ambiguous end line for mol2 files
+        fReadLines.reverse()
+        for line in fReadLines:
+            # ignores any header info
+            if b"#" not in line:
+                block.append(str(line, "utf-8"))
+            # since reversed, this is the 'end' a mol2
+            if b"@<TRIPOS>MOLECULE" in line:
+                block.reverse()
+                mol2block = ",".join(block).replace(",", "")
+                mol = rdmolfiles.MolFromMol2Block(
+                    mol2block,
+                    sanitize=sanitize,
+                    removeHs=remove_hs,
+                    cleanupSubstructures=cleanup_substructures,
+                )
+                if mol is None and fail_if_invalid:
+                    raise ValueError(f"Invalid molecule: {mol2block}")
+                mols.append(mol)
+                block = []
+
+    mols.reverse()
+    return mols
 
 
 def read_molblock(
@@ -261,6 +385,94 @@ def to_molblock(
     )
 
     return molblock
+
+
+def read_pdbblock(
+    molblock: str,
+    sanitize: bool = True,
+    remove_hs: bool = True,
+    flavor: int = 0,
+    proximity_bonding: bool = True,
+) -> dm.Mol:
+    """Read a PDB string block.
+
+    Args:
+        molblock: String containing the Mol block.
+        sanitize: Whether to sanitize the molecules.
+        remove_hs: Whether to remove the existing hydrogens in the SDF files.
+        flavor: RDKit flavor options.
+        proximity_bonding: Whether to toggles automatic proximity bonding.
+    """
+
+    mol = rdmolfiles.MolFromPDBBlock(
+        molblock,
+        sanitize=sanitize,
+        removeHs=remove_hs,
+        flavor=flavor,
+        proximityBonding=proximity_bonding,
+    )
+    return mol
+
+
+def to_pdbblock(mol: Mol, conf_id: int = -1) -> str:
+    """Convert a molecule to a PDB string block.
+
+    Args:
+        mol: A molecule.
+        conf_id: Selects which conformation to use.
+    """
+    molblock = rdmolfiles.MolToPDBBlock(mol, confId=conf_id)
+    return molblock
+
+
+def read_pdbfile(
+    urlpath: Union[str, os.PathLike],
+    sanitize: bool = True,
+    remove_hs: bool = True,
+    flavor: int = 0,
+    proximity_bonding: bool = True,
+) -> Mol:
+    """Read a PDB file.
+
+    Args:
+        urlpath: Path to a file or a file-like object. Path can be remote or local.
+        sanitize: Whether to sanitize the molecules.
+        remove_hs: Whether to remove the existing hydrogens in the SDF files.
+        flavor: RDKit flavor options.
+        proximity_bonding: Whether to toggles automatic proximity bonding.
+
+    Returns:
+        mol: a molecule
+    """
+
+    with fsspec.open(urlpath, "r") as f:
+        f = cast(IO, f)
+        mol = read_pdbblock(
+            f.read(),
+            sanitize=sanitize,
+            remove_hs=remove_hs,
+            flavor=flavor,
+            proximity_bonding=proximity_bonding,
+        )
+    return mol
+
+
+def to_pdbfile(
+    mol: Mol,
+    urlpath: Union[str, os.PathLike],
+    conf_id: int = -1,
+):
+    """Save a molecule to a PDB file.
+
+    Args:
+        mol: A molecule.
+        urlpath: Path to a file or a file-like object. Path can be remote or local.
+        conf_id: Selects which conformation to use.
+    """
+    molblock = to_pdbblock(mol, conf_id=conf_id)
+    with fsspec.open(urlpath, "w") as f:
+        f = cast(IO, f)
+        f.write(molblock)
 
 
 def to_smi(
